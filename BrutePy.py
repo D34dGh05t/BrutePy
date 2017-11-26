@@ -3,49 +3,44 @@
 import sys
 import threading
 
-def BruteForce(paswd, chrSet, n):
-	def Password(passwd, pNo, charSet):
-		l = len(pNo)
-		lastCh = pNo[l-1]
-		passwd[l-1] = charSet[lastCh+1]
-		return passwd
+def BruteForce(passwdParametersInp, charSetArgv, n):
 
-	def passwd1(paswd, charSet, pNo):
-		passwd = paswd
-		lPasswd = len(passwd)
-		lChars = len(charSet)
+	def next_password(passwdList, passwdCodes, charSet, passwdLen, charSetLastChar):
+		passwdList[passwdLen] = charSet[passwdCodes[passwdLen]+1]
+		return passwdList
 
+	def aa_to_ab(passwd, charSet, passwdCodes, passwdLen, charSetLen):
 		n = 0
-		for a in range(lPasswd-1, -1, -1):
-			if(paswd[a] == charSet[lChars-1]):
+		for a in range(passwdLen, -1, -1):
+			if(passwd[a] == charSet[charSetLen-1]):
 				passwd[a] = charSet[0]
 				n = 1
 			elif(n):
-				passwd[a] = charSet[pNo[a]+1]
+				passwd[a] = charSet[passwdCodes[a]+1]
 				break
 			else:
 				break
 		return passwd
 
-	def passwd2(paswd, charSet):
+	def zz_to_aaa(charSet, passwdLen):
 		passwd = []
 		passwd.append(charSet[0])
-		for a in paswd:
+		for a in range(passwdLen+1):
 			passwd.append(charSet[0])
 
 		return passwd
 
-	def pToNum(paswd, charSet):
+	def passwd_to_codes(passwd, charSet):
 		n = 0
-		pNo = []
-		for a in paswd:
+		passwdCodes = []
+		for a in passwd:
 			for b in charSet:
 				if(a == b):
-					pNo.append(n)
+					passwdCodes.append(n)
 					n = 0
 					break
 				n += 1
-		return pNo
+		return passwdCodes
 
 	def GenChrset(opt):
 		upperCase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -69,93 +64,95 @@ def BruteForce(paswd, chrSet, n):
 
 		return list(chrSet)
 
-	def bruteGen_main(paswd, n):
-		charSet = GenChrset(chrSet)
-		l = len(charSet)
-		if(paswd == ""):
-			paswd = list(charSet[0])
-		p = "".join(paswd).split("-")
+	def bruteGen_main(passwdParametersInp, n):
+		charSet = GenChrset(charSetArgv)
+		charSetLen = len(charSet)
+		charSetLastChar = charSet[charSetLen-1]
 
-		paswd = list(p[0])
-		if(len(p) == 1):
-			bPass = len(p)*charSet[len(charSet)-1]
-		elif(len(p) == 2):
-			bPass = list(p[1])
+		if(passwdParametersInp == ""):
+			passwdParametersInp = list(charSet[0])
+
+		passwdParameters = "".join(passwdParametersInp).split("-")
+
+		passwdFirstParameter = list(passwdParameters[0])
+		passwdParametersLen = len(passwdParameters)
+
+		if(passwdParametersLen == 1):
+			passwdBreak = passwdParametersLen*charSetLastChar
+		elif(passwdParametersLen == 2):
+			passwdBreak = list(passwdParameters[1])
 			n = 1
 		else:
 			print("[-] Incorrect Password Parameters")
 			sys.exit(100)
+
 		no = 0
-		for a in paswd:
-			for b in range(l):
-				char = charSet[b]
+		for a in passwdParametersInp:
+			for char in charSet:
 				if(a == char):
+					no = 0
 					break
-				elif(a != char):
-					if(no == l-1):
-						print("\033[31m[-] ",end="")
-						print("\033[32m{}".format("".join(paswd)),end="")
-						print("\033[31m not found in {}\033[0m".format(chrSet))
-						exit()
-					else:
-						no += 1
+				else:
+					no = 1
+			if(no):
+				print("\033[31m[-] \033[32m{}\033[31m not found in {}\033[0m".format("".join(passwdFirstParameter), charSetArgv))
+				exit()
 
-		pasword = paswd
-		passwd = paswd
-		print("".join(pasword))
-
-		cLen = len(charSet)
-		lastCh = charSet[cLen-1]
-
+		passwdCodes = passwd_to_codes(passwdFirstParameter, charSet)
+		passwdLen = len(passwdFirstParameter)-1
+		passwdLenIncrease = charSetLastChar*(passwdLen+1)
+		passwdList = passwdFirstParameter
 		while True:
-			pNo = pToNum(pasword, charSet)
-			if("".join(pasword) == len(pasword)*lastCh):
+			passwd = "".join(passwdList)
+			passwdLastChar = passwdList[passwdLen]
+
+			print(passwd)
+
+			if(passwd == passwdBreak):
+				break
+
+			if(passwd == passwdLenIncrease):
 				if(n):
-					passwd = passwd2(pasword, charSet)
-					if(pasword == bPass):
-						break
-					print("".join(passwd))
+					passwdLenIncrease = passwdLen+1*charSetLastChar
+					passwdLen = len(passwd)-1
+					passwdList = zz_to_aaa(charSet, passwdLen)
 				else:
 					break
+			elif(passwdLastChar == charSetLastChar):
+				passwdList = aa_to_ab(passwdList, charSet, passwdCodes, passwdLen, charSetLen)
 			else:
-				if(pasword[len(pasword)-1] == charSet[len(charSet)-1]):
-					passwd = passwd1(pasword, charSet, pNo)
-					print("".join(passwd))
+				passwdCodes = passwd_to_codes(passwd, charSet)
+				passwdList = next_password(passwdList, passwdCodes, charSet, passwdLen, charSetLastChar)
 
-			if(pasword == bPass):
-				break
-			pNo = pToNum(passwd, charSet)
-			pasword = Password(passwd, pNo, charSet)
-			print("".join(pasword))
-
-	bruteGen_main(paswd, n)
+	bruteGen_main(passwdParametersInp, n)
 
 def arguments():
 	try:
 		method = sys.argv[1]
 	except IndexError:
 		method = "--brute"
-	try:
-		chrSet = sys.argv[2]
-	except IndexError:
-		chrSet = "all"
-	try:
-		paswd = list(sys.argv[3])
-		n = 0
-	except IndexError:
-		paswd = ""
-		n = 1
-	return method, chrSet, paswd, n
+	if(method == "--brute"):
+		try:
+			charSetArgv = sys.argv[2]
+		except IndexError:
+			charSetArgv = "all"
+		try:
+			passwdParametersInp = list(sys.argv[3])
+			n = 0
+		except IndexError:
+			passwdParametersInp = ""
+			n = 1
+	return method, charSetArgv, passwdParametersInp, n
 def main():
-	method, chrSet, paswd, n = arguments()
+	method, charSetArgv, passwdParametersInp, n = arguments()
 
 	if(method == "--brute"):
 		try:
-			BruteForce(paswd, chrSet, n)
+			BruteForce(passwdParametersInp, charSetArgv, n)
 		except KeyboardInterrupt:
 			sys.exit(100)
 	else:
 		print("\033[1;31m[-] Argument Error")
-		print("[*] bruteGen.py [Method Name (--brute)] [Charset (lc, uc, sp, num, all)] [Password Parameters]")
+		print("[*] bruteGen.py [Method Name (--brute)] [Charset (lc, uc, sp, num, all)] [Password Parameters(aa-zz)]")
 
 main()

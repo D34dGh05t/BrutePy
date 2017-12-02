@@ -3,6 +3,7 @@
 import sys
 import threading
 import argparse
+import os
 
 def brute_force(passwdParametersInp, charSetArgv, n):
 
@@ -10,7 +11,7 @@ def brute_force(passwdParametersInp, charSetArgv, n):
 		passwdList[passwdLen] = charSet[passwdCodes[passwdLen]+1]
 		return passwdList
 
-	def aa_to_ab(passwd, charSet, passwdCodes, passwdLen, charSetLen):
+	def az_to_ba(passwd, charSet, passwdCodes, passwdLen, charSetLen):
 		n = 0
 		for a in range(passwdLen, -1, -1):
 			if(passwd[a] == charSet[charSetLen-1]):
@@ -24,12 +25,9 @@ def brute_force(passwdParametersInp, charSetArgv, n):
 		return passwd
 
 	def zz_to_aaa(charSet, passwdLen):
-		passwd = []
-		passwd.append(charSet[0])
-		for a in range(passwdLen+1):
-			passwd.append(charSet[0])
+		passwd = charSet[0] * (passwdLen+2)
 
-		return passwd
+		return list(passwd)
 
 	def passwd_to_codes(passwd, charSet):
 		n = 0
@@ -43,6 +41,11 @@ def brute_force(passwdParametersInp, charSetArgv, n):
 				n += 1
 		return passwdCodes
 
+	def passwd_to_codes_fake(passwdCodes, passwdLen):
+		passwdCodes[passwdLen] += 1
+
+		return passwdCodes
+
 	def gen_chrset(opt):
 		upperCase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 		lowerCase = "abcdefghijklmnopqrstuvwxyz"
@@ -50,22 +53,41 @@ def brute_force(passwdParametersInp, charSetArgv, n):
 		numaric = "0123456789"
 		all = upperCase + lowerCase + special + numaric
 
-		chrSet = ""
-		for o in opt:
-			if o == "u":
-				chrSet += upperCase
-			elif o == "l":
-				chrSet += lowerCase
-			elif o == "s":
-				chrSet += special
-			elif o == "n":
-				chrSet += numaric
-			elif o == "a":
-				chrSet += all
-			else:
-				chrSet += o
+		l_1 = ["all", "lc", "uc", "num", "sp"]
+		l_2 = [all, lowerCase, upperCase, numaric, special]
 
-		return list(chrSet)
+		chrSet = []
+		chrSetArgv = []
+		num = len(opt)-1
+		for o in opt:
+			chrSetArgv.append(o)
+
+			n = 0
+			for a in l_1:
+				chrSetArgvStr = "".join(chrSetArgv)
+				if a in chrSetArgvStr:
+					l = chrSetArgvStr.index(a)
+					for b in range(len(a)):
+						del chrSetArgv[l]
+
+					chrSetArgvStr = "".join(chrSetArgv)
+					chrSet += chrSetArgvStr
+					chrSet += l_2[n]
+
+					chrSetArgv = []
+
+					del l_1[n]
+					del l_2[n]
+					break
+				n += 1
+
+			if not num:
+				if chrSetArgv:
+					chrSet += chrSetArgvStr
+					break
+			num -= 1
+
+		return chrSet
 
 	def bruteGen_main(passwdParametersInp, n):
 		charSet = gen_chrset(charSetArgv)
@@ -123,15 +145,29 @@ def brute_force(passwdParametersInp, charSetArgv, n):
 					passwdList = zz_to_aaa(charSet, passwdLen)
 					passwdLen = len(passwd)
 					passwdLenIncrease = charSetLastChar*(passwdLen+1)
+					passwdCodes = passwd_to_codes(passwdList, charSet)
 				else:
 					break
 			elif(passwdLastChar == charSetLastChar):
-				passwdList = aa_to_ab(passwdList, charSet, passwdCodes, passwdLen, charSetLen)
+				passwdList = az_to_ba(passwdList, charSet, passwdCodes, passwdLen, charSetLen)
+				passwdCodes = passwd_to_codes(passwdList, charSet)
 			else:
-				passwdCodes = passwd_to_codes(passwd, charSet)
 				passwdList = next_password(passwdList, passwdCodes, charSet, passwdLen, charSetLastChar)
+				passwdCodes = passwd_to_codes_fake(passwdCodes, passwdLen)
 
 	bruteGen_main(passwdParametersInp, n)
+
+def dict_attack(file):
+	try:
+		filePath = os.path.abspath(file)
+		print("File Path:\t", filePath, "\n")
+		r = open(filePath)
+		data = r.readlines()
+		for line in data:
+			print(line, end="")
+
+	except Exception as e:
+		print(e)
 
 def word_manggle(word):
 	dic = {
@@ -172,8 +208,7 @@ def word_manggle(word):
 	"8":["B", "b", "&"],
 	"9":[""]
 	}
-	
-	
+
 	def passwd_maximum_codes(w):
 		passwdMaxCodes = []
 		breakPasswd = ""
@@ -184,13 +219,13 @@ def word_manggle(word):
 			passwdMaxCodes.append(n)
 
 		return(passwdMaxCodes, breakPasswd)
-		
-	def passwd_to_codes(passwdToWord, passwd):
+
+	def passwd_to_codes(passwdToWord, passwdList):
 		passwdCodes = []
 		n = 0
 		num = 0
 		nn = 0
-		for a in passwd:
+		for a in passwdList:
 			b = passwdToWord[nn]
 			for c in dic[b]:
 				if(a == c):
@@ -200,7 +235,6 @@ def word_manggle(word):
 					nn += 1
 					break
 				n += 1
-
 
 		return passwdCodes
 
@@ -226,10 +260,10 @@ def word_manggle(word):
 		passwdList[passwdLen-1] = lastCharList[passwdCodes[passwdLen-1]+1]
 
 		return passwdList
-		
+
 	def az_to_ba(passwdList, passwdCodes, passwdLen, wList):
 		n = 0
-		
+
 		for a in range(passwdLen-1, -1, -1):
 			b = wList[a]
 			charSet = dic[b]
@@ -249,7 +283,7 @@ def word_manggle(word):
 		for a in passwdMaxCodes:
 			b = dic[a]
 			breakPasswd += b
-			
+
 		return breakPasswd
 
 	def word_mangle_main(word):
@@ -258,18 +292,18 @@ def word_manggle(word):
 		w = ww.casefold()
 		passwdToWord = codes_to_word(w)
 		wList = list(passwdToWord)
-		passwdList = list(passwdToWord)
+		passwdList = list(ww)
 		wLen = passwdLen = len(passwdToWord)
 		lastCharWord = wList[wLen-1]
 		lastCharList = dic[lastCharWord]
 		passwdMaxCodes, breakPasswd = passwd_maximum_codes(passwdToWord)
 		passwdCodes = passwd_to_codes(passwdToWord, ww)
-		print(passwdCodes, passwdToWord, passwdList, lastCharWord, lastCharList, passwdMaxCodes)
-		exit()
-		n = len(w)-1
+		n = len(ww)-1
 		if(len(passwdParameters) == 2):
 			if(passwdParameters[1]):
 				breakPasswd = passwdParameters[1]
+
+		passwd = ww
 
 		while True:
 			passwd = "".join(passwdList)
@@ -284,9 +318,8 @@ def word_manggle(word):
 			else:
 				passwdCodes = passwd_to_codes(passwdToWord, passwdList)
 				passwdList = next_passwd(passwdList, lastCharList, passwdCodes, passwdLen)
-
 	word_mangle_main(word)
-	
+
 #def arguments():
 	#parser = argparse.ArgumentParser()
 	#parser.add_argument("-b", "--brute", default="a", help="Enable BruteForce attack mode")
@@ -301,13 +334,18 @@ def main():
 	method = sys.argv[1]
 	if(method == "--brute"):
 		try:
+			charSetArgv = sys.argv[2]
+			passwdParametersInp = sys.argv[3]
+			n = 0
 			brute_force(passwdParametersInp, charSetArgv, n)
 		except KeyboardInterrupt:
 			sys.exit(100)
 	elif(method == "--mangle"):
 		word_manggle(sys.argv[2])
+	elif(method == "--dict"):
+		dict_attack(sys.argv[2])
 	else:
 		print("\033[1;31m[-] Argument Error")
-		print("[*] bruteGen.py [Method Name (--brute)] [Charset (lc, uc, sp, num, all)] [Password Parameters(aa-zz)]")
+		print("[*] bruteGen.py [Method Name (--brute, --mangle, --dict)] [Charset (lc, uc, sp, num, all)] [Password Parameters(aa-zz)]\033[0m")
 
 main()
